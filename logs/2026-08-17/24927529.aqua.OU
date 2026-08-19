@@ -33023,11 +33023,11 @@ LSTR FLOPs per inference window (B=1, long=2048 frames, work=32 frames, d_model=
   TOTAL                  23.107 GFLOPs   (−6.3% vs baseline)
 
 ==================================================================
-Training-run FLOP estimate (per window, B=1)
+Training FLOP estimate (per window, B=1)
   forward / window        24.661 GFLOPs
-  backward / window       49.322 GFLOPs   (x2.0 of forward)
-  train step (fwd+bwd)    73.982 GFLOPs
-  (pass --train_iters [and --test_iters] to get run totals)
+  backward / window       ~49.322 GFLOPs  (~2.0× forward)
+  train step (fwd+bwd)    ~73.983 GFLOPs (~3.0× forward)
+  (estimated; actual training FLOPs may vary)
 [main 048e32b] logs: 2026-08-12_10-09-44 job=24927529.aqua exit=0
  1 file changed, 1164 insertions(+)
  create mode 100644 logs/2026-08-05/24703330.aqua.OU
