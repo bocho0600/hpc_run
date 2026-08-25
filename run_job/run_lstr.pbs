@@ -60,6 +60,11 @@ if [ $TRAIN_EXIT -eq 0 ]; then
     # ── 4) FLOPs (baseline vs TOP_K sweep) ───────────────────────────────────
     python tools/flop_frame_selection.py --config_file "$CONFIG" \
         --top_k 64 128 256
+
+    # ── 5) Measured latency + params on the A100 (baseline vs TOP_K) ──────────
+    echo "########## BENCHMARK: measured latency / params / FLOPs ##########"
+    python tools/benchmark_frame_selection.py --config_file "$CONFIG" \
+        --top_k 64 128 256 --device cuda --iters 100
 else
     echo "Training failed (exit $TRAIN_EXIT); skipping eval and FLOPs."
 fi
