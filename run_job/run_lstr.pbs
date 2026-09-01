@@ -57,14 +57,37 @@ if [ $TRAIN_EXIT -eq 0 ]; then
         MODEL.LSTR.FRAME_SELECTION.MODE drop \
         $EVAL_OPTS
 
-    # ── 4) FLOPs (baseline vs TOP_K sweep) ───────────────────────────────────
+    # ── 3b) Eval same checkpoint with the pre-embedding GATE (Upgrade B) ──────
+    # Matched budget TOP_K so gate:norm / gate:uniform / attention are comparable.
+    echo "########## EVAL C: FRAME GATE norm (TOP_K=$TOP_K) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" \
+        MODEL.LSTR.FRAME_GATE.ENABLED True \
+        MODEL.LSTR.FRAME_GATE.SCORE norm \
+        MODEL.LSTR.FRAME_GATE.TOP_K $TOP_K \
+        $EVAL_OPTS
+
+    echo "########## EVAL D: FRAME GATE uniform (TOP_K=$TOP_K) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" \
+        MODEL.LSTR.FRAME_GATE.ENABLED True \
+        MODEL.LSTR.FRAME_GATE.SCORE uniform \
+        MODEL.LSTR.FRAME_GATE.TOP_K $TOP_K \
+        $EVAL_OPTS
+
+    # ── 4) FLOPs (attention selection sweep) ─────────────────────────────────
     python tools/flop_frame_selection.py --config_file "$CONFIG" \
         --top_k 64 128 256
 
-    # ── 5) Measured latency + params on the A100 (baseline vs TOP_K) ──────────
+    # ── 5) Measured latency + params on the A100 (attention selection) ────────
     echo "########## BENCHMARK: measured latency / params / FLOPs ##########"
     python tools/benchmark_frame_selection.py --config_file "$CONFIG" \
         --top_k 64 128 256 --device cuda --iters 100
+
+    # ── 6) 4-way method comparison at matched budget (FLOPs + latency) ────────
+    echo "########## COMPARE: baseline / gate:uniform / gate:norm / attention ##########"
+    python tools/compare_frame_methods.py --config_file "$CONFIG" \
+        --top_k $TOP_K --device cuda --iters 100
 else
     echo "Training failed (exit $TRAIN_EXIT); skipping eval and FLOPs."
 fi
