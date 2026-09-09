@@ -1,0 +1,71 @@
+#!/bin/bash -l
+#PBS -N gate_learned
+#PBS -l select=1:ncpus=4:ngpus=1:mem=32GB:gpu_id=A100
+#PBS -l walltime=24:00:00
+#PBS -m abe
+#PBS -M n11429984@qut.edu.au
+#PBS -j oe
+#PBS -q gpu_batch_exec
+
+# Learned pre-embedding frame gate (Upgrade B, "smart" version):
+#   1. TRAIN a model whose tiny Linear(raw->1) scorer picks which frames to keep
+#      BEFORE the feature head (scorer trained end-to-end via a soft sigmoid gate).
+#   2. Eval that checkpoint -> learned-gate mAP.
+#   3. Compare params/FLOPs/latency across all methods at the same budget.
+# The learned gate has weights, so it needs its OWN training run (not compatible
+# with the baseline checkpoint). Compare its mAP against the baseline / attention
+# / norm / uniform numbers from run_lstr.pbs at the SAME TOP_K.
+
+# ── Paths ────────────────────────────────────────────────────────────────────
+REPO_DIR=~/long-short-term-transformer_forked
+HPC_RUN_DIR=~/hpc_run
+
+CONFIG=configs/THUMOS/LSTR/lstr_long_512_work_8_kinetics_1x_framegate_learned.yaml
+CKPT=checkpoints/THUMOS/LSTR/lstr_long_512_work_8_kinetics_1x_framegate_learned/epoch-25.pth
+# Matches run_lstr.pbs budget so all methods are comparable at the same k.
+# Raise to 512 if the learned gate underperforms at 128 (6% is aggressive).
+TOP_K=128
+
+EVAL_OPTS="DATA_LOADER.BATCH_SIZE 4 DATA_LOADER.NUM_WORKERS 4 DATA_LOADER.PIN_MEMORY False"
+
+# ── Environment ──────────────────────────────────────────────────────────────
+cd "$REPO_DIR"
+module load Miniconda3
+conda activate lstr
+export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+
+# ── 1) Train the LEARNED gate (scorer trained end-to-end) ────────────────────
+python tools/train_net.py --config_file "$CONFIG" --gpu 0 \
+    MODEL.LSTR.FRAME_GATE.TOP_K $TOP_K
+TRAIN_EXIT=$?
+
+if [ $TRAIN_EXIT -eq 0 ]; then
+    # ── 2) Eval the learned-gate checkpoint -> mAP ───────────────────────────
+    echo "########## EVAL: LEARNED GATE (TOP_K=$TOP_K) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" \
+        MODEL.LSTR.FRAME_GATE.TOP_K $TOP_K \
+        $EVAL_OPTS
+
+    # ── 3) All-methods comparison at matched budget (FLOPs + latency) ─────────
+    echo "########## COMPARE: baseline / gate:* / attention @ TOP_K=$TOP_K ##########"
+    python tools/compare_frame_methods.py --config_file "$CONFIG" \
+        --top_k $TOP_K --device cuda --iters 100
+else
+    echo "Training failed (exit $TRAIN_EXIT); skipping eval and compare."
+fi
+
+# ── Git commit (always) and push (best-effort) ───────────────────────────────
+cd "$HPC_RUN_DIR"
+git add logs/
+git commit -m "logs: $(date +"%Y-%m-%d_%H-%M-%S") job=${PBS_JOBID} exit=${TRAIN_EXIT} (learned gate)"
+
+if git push origin main; then
+    echo "Logs pushed to GitHub."
+else
+    echo "WARNING: git push failed (compute node likely can't reach github.com)."
+    echo "         Push it from the login node with:  cd ${HPC_RUN_DIR} && git push origin main"
+    touch "${HPC_RUN_DIR}/.push_pending"
+fi
+
+exit $TRAIN_EXIT
