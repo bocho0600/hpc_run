@@ -50,7 +50,7 @@ if [ $TRAIN_EXIT -eq 0 ]; then
     # ── 3) All-methods comparison at matched budget (FLOPs + latency) ─────────
     echo "########## COMPARE: baseline / gate:* / attention @ TOP_K=$TOP_K ##########"
     python tools/compare_frame_methods.py --config_file "$CONFIG" \
-        --top_k $TOP_K --device cuda --iters 100
+        --top_k $TOP_K --device cuda --iters 100 --batch_sizes 1 16 64
 else
     echo "Training failed (exit $TRAIN_EXIT); skipping eval and compare."
 fi
