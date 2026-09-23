@@ -1,0 +1,92 @@
+#!/bin/bash -l
+#PBS -N tvseries
+#PBS -l select=1:ncpus=4:ngpus=1:mem=32GB:gpu_id=A100
+#PBS -l walltime=24:00:00
+#PBS -m abe
+#PBS -M n11429984@qut.edu.au
+#PBS -j oe
+#PBS -q gpu_batch_exec
+
+# Second-dataset run: TVSeries (metric = cAP, 31 classes, N = 512 long-mem frames).
+# Same experiment as run_lstr.pbs but on TVSeries:
+#   1. Train ONE baseline (no frame reduction).
+#   2. Eval that SAME checkpoint with: selection OFF (baseline), attention selection,
+#      gate:norm, gate:uniform  -- all at matched TOP_K.
+#   3. FLOP sweep + 4-way FLOPs/latency comparison (batch sweep).
+# Shows whether the THUMOS redundancy / gate findings generalise to TVSeries.
+
+# ── Paths ────────────────────────────────────────────────────────────────────
+REPO_DIR=~/long-short-term-transformer_forked
+HPC_RUN_DIR=~/hpc_run
+
+CONFIG=configs/TVSeries/LSTR/lstr_long_512_work_8_kinetics_1x.yaml
+CKPT=checkpoints/TVSeries/LSTR/lstr_long_512_work_8_kinetics_1x/epoch-25.pth
+TOP_K=128                 # N=512 for TVSeries, so this keeps 25%; sweep if needed
+NUM_CLASSES=31            # TVSeries has 31 classes (THUMOS has 22)
+
+EVAL_OPTS="DATA_LOADER.BATCH_SIZE 4 DATA_LOADER.NUM_WORKERS 4 DATA_LOADER.PIN_MEMORY False"
+
+# ── Environment ──────────────────────────────────────────────────────────────
+cd "$REPO_DIR"
+module load Miniconda3
+conda activate lstr
+export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+
+# ── 1) Train the BASELINE (no gate/selection; TVSeries config defaults are off) ─
+python tools/train_net.py --config_file "$CONFIG" --gpu 0
+TRAIN_EXIT=$?
+
+if [ $TRAIN_EXIT -eq 0 ]; then
+    echo "########## EVAL A: BASELINE (no reduction) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" $EVAL_OPTS
+
+    echo "########## EVAL B: ATTENTION SELECTION (TOP_K=$TOP_K) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" \
+        MODEL.LSTR.FRAME_SELECTION.ENABLED True \
+        MODEL.LSTR.FRAME_SELECTION.TOP_K $TOP_K \
+        MODEL.LSTR.FRAME_SELECTION.MODE drop \
+        $EVAL_OPTS
+
+    echo "########## EVAL C: FRAME GATE norm (TOP_K=$TOP_K) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" \
+        MODEL.LSTR.FRAME_GATE.ENABLED True \
+        MODEL.LSTR.FRAME_GATE.SCORE norm \
+        MODEL.LSTR.FRAME_GATE.TOP_K $TOP_K \
+        $EVAL_OPTS
+
+    echo "########## EVAL D: FRAME GATE uniform (TOP_K=$TOP_K) ##########"
+    python tools/test_net.py --config_file "$CONFIG" --gpu 0 \
+        MODEL.CHECKPOINT "$CKPT" \
+        MODEL.LSTR.FRAME_GATE.ENABLED True \
+        MODEL.LSTR.FRAME_GATE.SCORE uniform \
+        MODEL.LSTR.FRAME_GATE.TOP_K $TOP_K \
+        $EVAL_OPTS
+
+    # ── FLOPs + measured-latency comparison (note --num_classes for TVSeries) ─────
+    python tools/flop_frame_selection.py --config_file "$CONFIG" \
+        --num_classes $NUM_CLASSES --top_k 64 128 256
+
+    echo "########## COMPARE: baseline / gate:* / attention (batch sweep) ##########"
+    python tools/compare_frame_methods.py --config_file "$CONFIG" \
+        --num_classes $NUM_CLASSES --top_k $TOP_K --device cuda --iters 100 --batch_sizes 1 16 64
+else
+    echo "Training failed (exit $TRAIN_EXIT); skipping eval and FLOPs."
+fi
+
+# ── Git commit (always) and push (best-effort) ───────────────────────────────
+cd "$HPC_RUN_DIR"
+git add logs/
+git commit -m "logs: $(date +"%Y-%m-%d_%H-%M-%S") job=${PBS_JOBID} exit=${TRAIN_EXIT} (TVSeries)"
+
+if git push origin main; then
+    echo "Logs pushed to GitHub."
+else
+    echo "WARNING: git push failed (compute node likely can't reach github.com)."
+    echo "         Push it from the login node with:  cd ${HPC_RUN_DIR} && git push origin main"
+    touch "${HPC_RUN_DIR}/.push_pending"
+fi
+
+exit $TRAIN_EXIT
