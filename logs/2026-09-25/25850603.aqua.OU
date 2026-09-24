@@ -1,0 +1,187 @@
+{'DATA': {'CLASS_NAMES': ['Background',
+                          'Pick something up',
+                          'Point',
+                          'Drink',
+                          'Stand up',
+                          'Run',
+                          'Sit down',
+                          'Read',
+                          'Smoke',
+                          'Drive car',
+                          'Open door',
+                          'Give something',
+                          'Use computer',
+                          'Write',
+                          'Go down stairway',
+                          'Close door',
+                          'Throw something',
+                          'Go up stairway',
+                          'Get in/out of car',
+                          'Hang up phone',
+                          'Eat',
+                          'Answer phone',
+                          'Dress up',
+                          'Clap',
+                          'Undress',
+                          'Kiss',
+                          'Fall/trip',
+                          'Wave',
+                          'Pour',
+                          'Punch',
+                          'Fire weapon'],
+          'DATA_INFO': 'data/data_info.json',
+          'DATA_NAME': 'TVSeries',
+          'DATA_ROOT': 'data/TVSeries',
+          'FPS': 4,
+          'IGNORE_INDEX': -100,
+          'METRICS': 'cAP',
+          'NUM_CLASSES': 31,
+          'TEST_SESSION_SET': ['24_ep4',
+                               'Breaking_Bad_ep3',
+                               'Mad_Men_ep3',
+                               'How_I_Met_Your_Mother_ep7',
+                               'How_I_Met_Your_Mother_ep8',
+                               'Modern_Family_ep5',
+                               'Sons_of_Anarchy_ep3'],
+          'TRAIN_SESSION_SET': ['24_ep1',
+                                '24_ep2',
+                                '24_ep3',
+                                'Breaking_Bad_ep1',
+                                'Breaking_Bad_ep2',
+                                'How_I_Met_Your_Mother_ep1',
+                                'How_I_Met_Your_Mother_ep2',
+                                'How_I_Met_Your_Mother_ep3',
+                                'How_I_Met_Your_Mother_ep4',
+                                'How_I_Met_Your_Mother_ep5',
+                                'How_I_Met_Your_Mother_ep6',
+                                'Mad_Men_ep1',
+                                'Mad_Men_ep2',
+                                'Modern_Family_ep1',
+                                'Modern_Family_ep2',
+                                'Modern_Family_ep3',
+                                'Modern_Family_ep4',
+                                'Modern_Family_ep6',
+                                'Sons_of_Anarchy_ep1',
+                                'Sons_of_Anarchy_ep2']},
+ 'DATA_LOADER': {'BATCH_SIZE': 16,
+                 'NUM_WORKERS': 8,
+                 'PIN_MEMORY': True},
+ 'GPU': '0',
+ 'INPUT': {'MODALITY': 'twostream',
+           'MOTION_FEATURE': 'flow_kinetics_bninception',
+           'TARGET_PERFRAME': 'target_perframe',
+           'VISUAL_FEATURE': 'rgb_kinetics_resnet50'},
+ 'MODEL': {'CHECKPOINT': '',
+           'CRITERIONS': [['MCE', {}]],
+           'FEATURE_HEAD': {'LINEAR_ENABLED': True,
+                            'LINEAR_OUT_FEATURES': 1024},
+           'LSTR': {'ACTIVATION': 'relu',
+                    'AGES_MEMORY_LENGTH': 0,
+                    'AGES_MEMORY_NUM_SAMPLES': 0,
+                    'AGES_MEMORY_SAMPLE_RATE': 1,
+                    'AGES_MEMORY_SECONDS': 0,
+                    'DEC_MODULE': [-1, 2, True],
+                    'DIM_FEEDFORWARD': 1024,
+                    'DROPOUT': 0.2,
+                    'ENC_MODULE': [[16, 1, True], [32, 2, True]],
+                    'FRAME_GATE': {'ENABLED': False,
+                                   'SCORE': 'norm',
+                                   'TOP_K': 512},
+                    'FRAME_SELECTION': {'ENABLED': False,
+                                        'MODE': 'drop',
+                                        'TOP_K': 128},
+                    'INFERENCE_MODE': 'batch',
+                    'LONG_MEMORY_LENGTH': 2048,
+                    'LONG_MEMORY_NUM_SAMPLES': 512,
+                    'LONG_MEMORY_SAMPLE_RATE': 4,
+                    'LONG_MEMORY_SECONDS': 512,
+                    'NUM_HEADS': 16,
+                    'TOTAL_MEMORY_LENGTH': 2080,
+                    'TOTAL_MEMORY_NUM_SAMPLES': 544,
+                    'WORK_MEMORY_LENGTH': 32,
+                    'WORK_MEMORY_NUM_SAMPLES': 32,
+                    'WORK_MEMORY_SAMPLE_RATE': 1,
+                    'WORK_MEMORY_SECONDS': 8},
+           'MODEL_NAME': 'LSTR'},
+ 'OUTPUT_DIR': 'checkpoints/TVSeries/LSTR/lstr_long_512_work_8_kinetics_1x',
+ 'SEED': 0,
+ 'SESSION': '',
+ 'SOLVER': {'BASE_LR': 7e-05,
+            'MOMENTUM': 0.9,
+            'NUM_EPOCHS': 25,
+            'OPTIMIZER': 'adam',
+            'PHASES': ['train', 'test'],
+            'SCHEDULER': {'GAMMA': 0.1,
+                          'MILESTONES': [],
+                          'SCHEDULER_NAME': 'warmup_cosine',
+                          'WARMUP_EPOCHS': 10.0,
+                          'WARMUP_FACTOR': 0.3,
+                          'WARMUP_METHOD': 'linear'},
+            'START_EPOCH': 1,
+            'WEIGHT_DECAY': 5e-05},
+ 'VERBOSE': False}
+Traceback (most recent call last):
+  File "tools/train_net.py", line 58, in <module>
+    main(load_cfg())
+  File "tools/train_net.py", line 25, in main
+    for phase in cfg.SOLVER.PHASES
+  File "tools/train_net.py", line 25, in <dictcomp>
+    for phase in cfg.SOLVER.PHASES
+  File "/home/n11429984/long-short-term-transformer_forked/src/rekognition_online_action_detection/datasets/datasets.py", line 23, in build_data_loader
+    dataset=build_dataset(cfg, phase),
+  File "/home/n11429984/long-short-term-transformer_forked/src/rekognition_online_action_detection/datasets/datasets.py", line 18, in build_dataset
+    return data_layer(cfg, phase)
+  File "/home/n11429984/long-short-term-transformer_forked/src/rekognition_online_action_detection/datasets/perframe_data_layers.py", line 32, in __init__
+    self._init_dataset()
+  File "/home/n11429984/long-short-term-transformer_forked/src/rekognition_online_action_detection/datasets/perframe_data_layers.py", line 40, in _init_dataset
+    target = np.load(osp.join(self.data_root, self.target_perframe, session + '.npy'))
+  File "/home/n11429984/.conda/envs/lstr/lib/python3.7/site-packages/numpy/lib/npyio.py", line 417, in load
+    fid = stack.enter_context(open(os_fspath(file), "rb"))
+FileNotFoundError: [Errno 2] No such file or directory: 'data/TVSeries/target_perframe/24_ep1.npy'
+Training failed (exit 1); skipping eval and FLOPs.
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+Everything up-to-date
+Logs pushed to GitHub.
+
+PBS Job 25850603.aqua
+CPU time         : 00:00:07
+Wall time        : 00:03:38
+Mem usage        : 169120kb
+
+--- Job Runtime Information at 2026-09-25T02:05:52.720919---
+id               : 25850603.aqua
+Job_Name         : tvseries
+Job_Owner        : n11429984@aquarius02.ib0.hpc.qut.edu.au
+resources_used   : cput=00:00:07,mem=169120kb,walltime=00:03:38,ncpus=4,cpupercent=49,vmem=2599436kb,cpus="12,13,24,25",ngpus=0
+job_state        : 5
+queue            : gpu_batch_exec
+server           : aqua
+devices          : /dev/nvidia2
+Checkpoint       : u
+Error_Path       : aquarius02.ib0.hpc.qut.edu.au:/mnt/hpccs01/home/n11429984/hpc_run/run_job/tvseries.e25850603
+exec_host2       : gpu0n006.ib0.hpc.qut.edu.au:15002/1*4
+exec_vnode       : (gpu0n006[0]:ncpus=4:ngpus=1:mem=32gb:nfpgas=0)
+Join_Path        : oe
+Keep_Files       : n
+mtime            : 2026-09-25T02:02:09
+Output_Path      : aquarius02.ib0.hpc.qut.edu.au:/home/n11429984/hpc_run/logs/2026-09-25/
+Resource_List    : mem=32gb,walltime=24:00:00,ncpus=4,place=free
+schedselect      : 1:ncpus=4:ngpus=1:mem=32GB:gpu_id=A100:nfpgas=0:cpu_id=any:qlist=gpu_batch_exec
+stime            : 2026-09-25T02:02:08
+session_id       : 3165702
+substate         : 50
+Variable_List    : PBS_O_HOME=/home/n11429984,PBS_O_LANG=en_US.UTF-8,PBS_O_LOGNAME=n11429984,PBS_O_PATH=/mnt/weka/pkg/rhel94/AuthenticAMD-25/software/Miniconda3/25.7.0-2/bin:/mnt/weka/pkg/rhel94/AuthenticAMD-25/software/Miniconda3/25.7.0-2/condabin:/home/n11429984/.local/bin:/home/n11429984/bin:/opt/clmgr/sbin:/opt/clmgr/bin:/opt/sgi/sbin:/opt/sgi/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/c3/bin:/opt/pbs/bin:/sbin:/bin,PBS_O_MAIL=/var/spool/mail/n11429984,PBS_O_SHELL=/usr/local/qutsh/bin/qutsh,PBS_O_INTERACTIVE_AUTH_METHOD=resvport,PBS_O_HOST=aquarius02.ib0.hpc.qut.edu.au,PBS_O_WORKDIR=/mnt/hpccs01/home/n11429984/hpc_run/run_job,PBS_O_SYSTEM=Linux,ERES_RPID_NOTICE=UFJPSkVDVF9BQ0NPVU5USU5HOgpBIHZhbGlkIHByb2plY3QgUlBJRCBpcyByZXF1aXJlZCBmb3IgYWxsIGpvYnMuIFN1cHBseSBhIHZhbGlkIHByb2plY3QgUlBJRCB3aXRoIGAtUCA8UlBJRD5gICg2IHVwcGVyY2FzZSBsZXR0ZXJzIGZvbGxvd2VkIGJ5IDQgZGlnaXRzLCBlLmcuIC1QIEFCQ0RFRjEyMzQpLiBGaW5kIHlvdXIgUlBJRHMgaW4gdGhlIFFVVCBETVAgKGh0dHBzOi8vZGF0YS1tZ210LXBsYW4ucXV0LmVkdS5hdSksIG9yIGNvbnRhY3QgZVJlc2VhcmNoLiBZb3VyIGpvYiBoYXMgYmVlbiByZWNvcmRlZCBhZ2FpbnN0ICdFUlItTk9SUElEJyBhbmQgYWxsb3dlZCB0byBydW4gZHVyaW5nIHRoZSB0cmFuc2l0aW9uIHBlcmlvZC4KQ2Fubm90IHZlcmlmeSBwcm9qZWN0IGF1dGhvcmlzYXRpb246IG5vIHZhbGlkIFJQSUQgaXMgc2V0IG9uIHRoZSBqb2IuIFlvdXIgam9iIGhhcyBiZWVuIGFsbG93ZWQgdG8gcnVuIGR1cmluZyB0aGUgdHJhbnNpdGlvbiBwZXJpb2Qu,PBS_O_QUEUE=gpu_batch
+euser            : n11429984
+egroup           : default
+hashname         : 25850603.aqua
+run_count        : 1
+job_kill_delay   : 10
+Exit_status      : 1
+project          : ERR-NORPID
+run_version      : 1
+Submit_Host      : aquarius02.ib0.hpc.qut.edu.au
+Submit_arguments : -o /home/n11429984/hpc_run/logs/2026-09-25/ run_tvseries.pbs 
+ctime            : 2026-09-25T01:48:18
